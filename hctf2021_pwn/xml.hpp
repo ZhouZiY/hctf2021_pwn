@@ -26,9 +26,11 @@ class XML
 public:
 	void parseXml(const std::string& fileName);
 	std::shared_ptr<std::vector<std::shared_ptr<XML_NODE>>> node;
+	void editXML(std::string&, std::string&);
+	int getEditStatus(std::string&, std::string&);
 
 protected:
-	typedef std::pair<std::string, std::string>      value_type;
+	typedef std::pair<std::string, std::string> value_type;
 	std::vector<std::string::value_type> v;
 	bool parseNode(std::vector<std::string::value_type>::iterator& current);
 	bool parseElement(std::vector<std::string::value_type>::iterator& current);
@@ -40,17 +42,17 @@ class XML_NODE
 {
 public:
 	std::string nodeName;
-	
 	void parse(std::vector<std::string::value_type>::iterator& current);
 	std::map<std::string, std::string> attribute;
 	std::shared_ptr <std::string> data;
 	std::shared_ptr<std::vector<std::shared_ptr<XML_NODE>>> node;	
+	char* isInsertable(int);
+	char backup[100] = {0, };
 private:
 	bool parseName(std::vector<std::string::value_type>::iterator& current);
 	void name(std::vector<std::string::value_type>::iterator being, std::vector<std::string::value_type>::iterator end);
 	void parseNodeAttribute(std::vector<std::string::value_type>::iterator& current);
 	void paeseNodeContents(std::vector<std::string::value_type>::iterator& current);
-
 };
 
 

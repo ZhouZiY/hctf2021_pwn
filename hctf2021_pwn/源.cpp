@@ -1,8 +1,6 @@
-
-
-
 #include "xml.hpp"
 #include <iostream>
+#include <cstring>
 
 void XML::parseXml(const std::string& fileName)
 {
@@ -69,6 +67,8 @@ void XML_NODE::name(std::vector<std::string::value_type>::iterator begin, std::v
 {
 	this->nodeName = { begin,end };
 }
+
+
 bool XML::parseElement(std::vector<std::string::value_type>::iterator& current)
 {
 	std::shared_ptr<XML_NODE> element{ std::make_shared<XML_NODE>() };
@@ -78,6 +78,8 @@ bool XML::parseElement(std::vector<std::string::value_type>::iterator& current)
 	this->node->push_back(element);
 	return true;
 }
+
+
 void XML_NODE::parseNodeAttribute(std::vector<std::string::value_type>::iterator& current)
 {
 	while (*current)
@@ -107,6 +109,8 @@ void XML_NODE::parseNodeAttribute(std::vector<std::string::value_type>::iterator
 		}
 	}
 }
+
+
 void XML_NODE::paeseNodeContents(std::vector<std::string::value_type>::iterator& current)
 {
 	while (*current)
@@ -122,7 +126,7 @@ void XML_NODE::paeseNodeContents(std::vector<std::string::value_type>::iterator&
 				if (this->nodeName != std::string{ current, gt })
 				{
 					//error
-					_CrtDbgBreak();
+					// _CrtDbgBreak();
 				}
 				current = gt + 1;
 				return;
@@ -173,9 +177,9 @@ bool XML_NODE::parseName(std::vector<std::string::value_type>::iterator& current
 	return true;
 
 }
+
 void XML_NODE::parse(std::vector<std::string::value_type>::iterator& current)
 {
-
 
 	log(current, "parse name");
 	this->parseName(current);
@@ -191,36 +195,133 @@ void XML_NODE::parse(std::vector<std::string::value_type>::iterator& current)
 	this->paeseNodeContents(current);
 }
 
-void pnode(std::shared_ptr<XML_NODE>x, std::string s)
+char* XML_NODE::isInsertable(int x)
+{
+	if (x > 100 || x < 0)
+	{
+		return nullptr;
+	}
+	return backup;
+}
+
+std::shared_ptr<XML_NODE> pnode(std::shared_ptr<XML_NODE>x, std::string s, std::string name="")
 {
 	std::cout << s << x->nodeName << "  ";
-	for (auto& a : x->attribute)
+	bool isShowOrFind = true;
+	if (name != "") isShowOrFind = false;
+	if (isShowOrFind)
 	{
-		std::cout << a.first << "=" << a.second << "  ";
+		for (auto& a : x->attribute)
+		{
+			std::cout << a.first << "=" << a.second << "  ";
+		}
+		if (x->data)
+			std::cout << *x->data << "  ";
 	}
-	if (x->data)
-		std::cout << *x->data << "  ";
-	else if (x->node)
+	if (x->node)
 	{
-		std::cout << std::endl;
+		if (isShowOrFind) std::cout << std::endl;
 		for (auto& a : *x->node)
 		{
-			pnode(a, s + "  ");
-			std::cout << std::endl;
+			std::shared_ptr<XML_NODE> retVal = pnode(a, s + "  ", name);
+			if (isShowOrFind) std::cout << std::endl;
+			else
+			{
+				if (retVal != nullptr) return retVal;
+			}
 		}
 	}
-
-
+	return (x->nodeName == name)?x:nullptr;
 }
+
+int XML::getEditStatus(std::string& name, std::string& content)
+{
+	int retVal = 0;
+	int length1 = 0;
+	char *insertPlace, *temp;
+	std::shared_ptr<XML_NODE> tempNode = pnode(*node->begin(), "", name);
+	if (tempNode)
+	{
+		retVal += 1;
+		length1 = tempNode->data->length();
+		insertPlace = tempNode->isInsertable(length1);
+		if (insertPlace[0] != '\x99')
+		{
+			retVal += 1;
+			return retVal;
+		}
+	}
+	return 0;
+}
+
+void XML::editXML(std::string& name, std::string& content)
+{
+	int status = getEditStatus(name, content);
+	if (status >= 1)
+	{
+		std::shared_ptr<XML_NODE> a = pnode(*node->begin(), "", name);
+		if (a && a->nodeName == name)
+		{
+			if (status == 1)
+			{
+				*(a->data) = content;
+			}
+			else
+			{
+				for (int i = 0; i < a->data->length(); i++)
+				{
+					a->backup[i] = (*a->data)[i];
+				}
+				*(a->data) = content;
+			}
+		}
+	}
+	else
+	{
+		std::cout << "No such name" << std::endl;
+	}
+	return;
+}
+
+void menu()
+{
+	using namespace std;
+	cout << "Please input your choice" << endl;
+	cout << "1. Parse XML File" << endl;
+	cout << "2. Edit existed XML Node" << endl;
+	cout << "3. Show XML Information" << endl;
+	cout << "Choice: ";
+}
+
 int main()
 {
 	using namespace std;
+	int choice = 0;
+	XML xmlfile;
+	string nodeName, content;
+	cout << "Welcome to D^3CTF 2021!" << endl;
+	while (1)
+	{
+		menu();
+		cin >> choice;
+		switch (choice)
+		{
+		case 1:
+			xmlfile.parseXml("BFS.vcxproj");
+			break;
+		
+		case 2:
+			cout << "Please input the node name which you want to edit";
+			cin >> nodeName >> content;
+			xmlfile.editXML(nodeName, content);
+			break;
 
-
-
-	XML x;
-	x.parseXml("C:\\code\\hctf2021_pwn\\hctf2021_pwn\\BFS.vcxproj");
-	pnode(*x.node->begin(), "");
-
+		case 3:
+			pnode(*xmlfile.node->begin(), "");
+			break;
+		default:
+			break;
+		}
+	}
 
 }
