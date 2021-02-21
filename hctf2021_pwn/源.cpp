@@ -207,6 +207,7 @@ char* XML_NODE::isInsertable(int x)
 std::shared_ptr<XML_NODE> pnode(std::shared_ptr<XML_NODE>x, std::string s, std::string name="")
 {
 	std::cout << s << x->nodeName << "  ";
+	if (x->nodeName == name) return x;
 	bool isShowOrFind = true;
 	if (name != "") isShowOrFind = false;
 	if (isShowOrFind)
@@ -231,7 +232,7 @@ std::shared_ptr<XML_NODE> pnode(std::shared_ptr<XML_NODE>x, std::string s, std::
 			}
 		}
 	}
-	return (x->nodeName == name)?x:nullptr;
+	return nullptr;
 }
 
 int XML::getEditStatus(std::string& name, std::string& content)
@@ -283,6 +284,11 @@ void XML::editXML(std::string& name, std::string& content)
 	return;
 }
 
+void XML_NODE::meme(char* content)
+{
+	std::cout << "Useless" << content << std::endl;
+}
+
 void menu()
 {
 	using namespace std;
@@ -307,7 +313,7 @@ int main()
 		switch (choice)
 		{
 		case 1:
-			xmlfile.parseXml("BFS.vcxproj");
+			xmlfile.parseXml("temp1.xml");
 			break;
 		
 		case 2:
@@ -319,6 +325,14 @@ int main()
 		case 3:
 			pnode(*xmlfile.node->begin(), "");
 			break;
+
+		case 4:
+			cout << "MEME" << endl;
+			cin >> nodeName;
+			if (auto temp = pnode(*xmlfile.node->begin(), "", nodeName)) 
+				temp->meme(temp->backup);
+			break;
+
 		default:
 			break;
 		}
