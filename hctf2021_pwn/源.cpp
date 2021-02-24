@@ -1,29 +1,27 @@
 #include "xml.hpp"
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 
-void XML::parseXml(const std::string& fileName)
+void init()
 {
-	const std::locale& loc = std::locale();
+	setbuf(stdin, 0);
+	setbuf(stdout, 0);
+}
 
-	std::basic_ifstream <std::string::value_type> stream(fileName);
-	stream.imbue(loc);
-
-	v = { std::istreambuf_iterator<std::string::value_type>(stream.rdbuf()), std::istreambuf_iterator<std::string::value_type>() };
-	v.push_back(0);
-
-	/*
-	for (auto& x : v)
-		std::cout << x;
-	*/
-
-	auto current = v.begin(), end = v.end();
-
-	while (*current && current < end)
+void XML::parseXml(const std::string& temp)
+{
+	if (isParsed) 
 	{
-		parseNode(current);
+		std::cout << "Can not change the file!" << std::endl;
+		return;
 	}
-
+	
+	isParsed = true;
+	v = {temp.begin(), temp.end()};
+	v.push_back(0);
+	auto node = v.begin();
+	parseNode(node);
 }
 
 bool XML::parseNode(std::vector<std::string::value_type>::iterator& current)
@@ -42,8 +40,6 @@ bool XML::parseNode(std::vector<std::string::value_type>::iterator& current)
 			{
 				current = iterFind(current, CHARACTACTERS::GT);
 				++current;
-				//current += 3;
-				// todo
 			}
 		}
 		break;
@@ -111,7 +107,7 @@ void XML_NODE::parseNodeAttribute(std::vector<std::string::value_type>::iterator
 }
 
 
-void XML_NODE::paeseNodeContents(std::vector<std::string::value_type>::iterator& current)
+void XML_NODE::parseNodeContents(std::vector<std::string::value_type>::iterator& current)
 {
 	while (*current)
 	{
@@ -125,15 +121,14 @@ void XML_NODE::paeseNodeContents(std::vector<std::string::value_type>::iterator&
 				auto gt = iterFind(current, CHARACTACTERS::GT);
 				if (this->nodeName != std::string{ current, gt })
 				{
-					//error
-					// _CrtDbgBreak();
+					std::cout << "Unmatch!" << std::endl;
+					exit(-1);
 				}
 				current = gt + 1;
 				return;
 			}
 			else
 			{
-				log(current, "in paeseNodeContents");
 				++current;
 				std::shared_ptr<XML_NODE> node(std::make_shared<XML_NODE>());
 				node->parse(current);
@@ -180,19 +175,16 @@ bool XML_NODE::parseName(std::vector<std::string::value_type>::iterator& current
 
 void XML_NODE::parse(std::vector<std::string::value_type>::iterator& current)
 {
-
-	log(current, "parse name");
 	this->parseName(current);
-
-	log(current, "parseNodeAttribute");
 	this->parseNodeAttribute(current);
+
 	if (*current == CHARACTACTERS::SLASH && *(current + 1) == CHARACTACTERS::GT)
 	{
 		current += 2;
 		return;
 	}
-	log(current, "paeseNodeContents");
-	this->paeseNodeContents(current);
+
+	this->parseNodeContents(current);
 }
 
 char* XML_NODE::isInsertable(int x)
@@ -206,12 +198,14 @@ char* XML_NODE::isInsertable(int x)
 
 std::shared_ptr<XML_NODE> pnode(std::shared_ptr<XML_NODE>x, std::string s, std::string name="")
 {
-	std::cout << s << x->nodeName << "  ";
 	if (x->nodeName == name) return x;
+
 	bool isShowOrFind = true;
 	if (name != "") isShowOrFind = false;
+
 	if (isShowOrFind)
 	{
+		std::cout << s << x->nodeName << "  ";
 		for (auto& a : x->attribute)
 		{
 			std::cout << a.first << "=" << a.second << "  ";
@@ -219,6 +213,7 @@ std::shared_ptr<XML_NODE> pnode(std::shared_ptr<XML_NODE>x, std::string s, std::
 		if (x->data)
 			std::cout << *x->data << "  ";
 	}
+	
 	if (x->node)
 	{
 		if (isShowOrFind) std::cout << std::endl;
@@ -232,6 +227,7 @@ std::shared_ptr<XML_NODE> pnode(std::shared_ptr<XML_NODE>x, std::string s, std::
 			}
 		}
 	}
+
 	return nullptr;
 }
 
@@ -241,23 +237,26 @@ int XML::getEditStatus(std::string& name, std::string& content)
 	int length1 = 0;
 	char *insertPlace, *temp;
 	std::shared_ptr<XML_NODE> tempNode = pnode(*node->begin(), "", name);
+
 	if (tempNode)
 	{
 		retVal += 1;
 		length1 = tempNode->data->length();
 		insertPlace = tempNode->isInsertable(length1);
-		if (insertPlace[0] != '\x99')
+		if (insertPlace[0] != CHARACTACTERS::UNREMOVABLE)
 		{
 			retVal += 1;
 			return retVal;
 		}
 	}
+
 	return 0;
 }
 
 void XML::editXML(std::string& name, std::string& content)
 {
 	int status = getEditStatus(name, content);
+
 	if (status >= 1)
 	{
 		std::shared_ptr<XML_NODE> a = pnode(*node->begin(), "", name);
@@ -281,6 +280,7 @@ void XML::editXML(std::string& name, std::string& content)
 	{
 		std::cout << "No such name" << std::endl;
 	}
+
 	return;
 }
 
@@ -301,10 +301,11 @@ void menu()
 
 int main()
 {
+	init();
 	using namespace std;
 	int choice = 0;
 	XML xmlfile;
-	string nodeName, content;
+	string nodeName, content, xmlContent;
 	cout << "Welcome to D^3CTF 2021!" << endl;
 	while (1)
 	{
@@ -313,11 +314,17 @@ int main()
 		switch (choice)
 		{
 		case 1:
-			xmlfile.parseXml("temp1.xml");
+			char temp;
+			cout << "Please input file's content" << endl;
+			while (read(STDIN_FILENO, &temp, 1) && temp != '\xff')
+			{
+				xmlContent.push_back(temp);
+			}
+			xmlfile.parseXml(xmlContent);
 			break;
 		
 		case 2:
-			cout << "Please input the node name which you want to edit";
+			cout << "Please input the node name which you want to edit" << endl;
 			cin >> nodeName >> content;
 			xmlfile.editXML(nodeName, content);
 			break;
@@ -337,5 +344,4 @@ int main()
 			break;
 		}
 	}
-
 }

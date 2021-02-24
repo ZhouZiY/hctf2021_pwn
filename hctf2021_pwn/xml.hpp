@@ -20,6 +20,7 @@ enum CHARACTACTERS :char
 	QUOT = '\"',
 	SLASH = '/',
 	NEWLINE='\n',
+	UNREMOVABLE='\x99'
 };
 class XML
 {
@@ -32,6 +33,7 @@ public:
 protected:
 	typedef std::pair<std::string, std::string> value_type;
 	std::vector<std::string::value_type> v;
+	bool isParsed = false;
 	bool parseNode(std::vector<std::string::value_type>::iterator& current);
 	bool parseElement(std::vector<std::string::value_type>::iterator& current);
 	
@@ -53,7 +55,7 @@ private:
 	bool parseName(std::vector<std::string::value_type>::iterator& current);
 	void name(std::vector<std::string::value_type>::iterator being, std::vector<std::string::value_type>::iterator end);
 	void parseNodeAttribute(std::vector<std::string::value_type>::iterator& current);
-	void paeseNodeContents(std::vector<std::string::value_type>::iterator& current);
+	void parseNodeContents(std::vector<std::string::value_type>::iterator& current);
 };
 
 
@@ -86,23 +88,3 @@ inline void skip(I& c)
 
 
 
-
-#ifdef _DEBUG
-#include<iostream>
-void inline log(std::vector<std::string::value_type>::iterator& current,std::string info)
-{
-	/*using namespace std;
-	cout << "position:\n            ";
-	for (size_t i = 0; i < 20&& *current!='\0'; ++i)
-	{
-		cout << *(current+i );
-	}
-	cout << "\ninfo:  " << info << endl;;
-	*/
-}
-#else
-void inline log(std::vector<std::string::value_type>::iterator& current, std::string info)
-{
-
-}
-#endif // _DEBUG
