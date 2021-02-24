@@ -146,7 +146,7 @@ void XML_NODE::parseNodeContents(std::vector<std::string::value_type>::iterator&
 		{
 			auto lt = iterFind(current, CHARACTACTERS::LT);
 			data = std::make_shared <std::string>(current, lt);
-			backup = (char*)malloc(100);
+			backup = (char*)malloc(0x50);
 			current = lt;
 			break;
 		}
@@ -190,7 +190,7 @@ void XML_NODE::parse(std::vector<std::string::value_type>::iterator& current)
 
 char* XML_NODE::isInsertable(int x)
 {
-	if (x > 100 || x < 0)
+	if (x > 0x50 || x < 0)
 	{
 		return nullptr;
 	}
