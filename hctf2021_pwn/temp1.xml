@@ -2,4 +2,7 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 aaaaaaaaa
   <Project2>bbbbbbb</Project2>
+  <Project3>bbbbbbb</Project3>
+  <Project4>bbbbbbb</Project4>
+  <Project5>bbbbbbb</Project5>
 </Project>

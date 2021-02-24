@@ -16,7 +16,7 @@ void XML::parseXml(const std::string& temp)
 		std::cout << "Can not change the file!" << std::endl;
 		return;
 	}
-	
+
 	isParsed = true;
 	v = {temp.begin(), temp.end()};
 	v.push_back(0);
@@ -146,6 +146,7 @@ void XML_NODE::parseNodeContents(std::vector<std::string::value_type>::iterator&
 		{
 			auto lt = iterFind(current, CHARACTACTERS::LT);
 			data = std::make_shared <std::string>(current, lt);
+			backup = (char*)malloc(100);
 			current = lt;
 			break;
 		}

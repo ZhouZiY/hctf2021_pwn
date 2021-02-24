@@ -49,7 +49,7 @@ public:
 	std::shared_ptr <std::string> data;
 	std::shared_ptr<std::vector<std::shared_ptr<XML_NODE>>> node;	
 	char* isInsertable(int);
-	char *backup = (char*)malloc(100);
+	char *backup;
 	virtual void meme(char*);
 private:
 	bool parseName(std::vector<std::string::value_type>::iterator& current);
