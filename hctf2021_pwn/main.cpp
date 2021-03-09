@@ -1,3 +1,5 @@
+// clang++ main.cpp -O3 -o Truth
+// md5sum Truth f7a17c8399fb7df438cebf54aa2423c4
 #include "xml.hpp"
 #include <iostream>
 #include <cstring>
